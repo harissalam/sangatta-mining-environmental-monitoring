@@ -1,23 +1,34 @@
 # Google Earth Engine Assets
 
-This document records the Google Earth Engine assets used in the Sangatta Mining Environmental Monitoring project.
+## Mining Area
 
-## Area of Interest (AOI)
+**Variable Name:** `miningArea`
 
-**Asset Type:** FeatureCollection
+**Type:** FeatureCollection
 
 **Description:**  
-Study area boundary used for the Sangatta mining environmental monitoring analysis.
+Interpreted mining Area of Interest used for the Sangatta Mining
+Environmental Monitoring project.
 
 **Source:**  
-Imported from an external Shapefile.
+Esri World Imagery
 
-**Google Earth Engine Asset ID:**
+**Method:**  
+Manual visual interpretation and digitization.
 
-`projects/harissalam-geospatial-lab/assets/Sangatta_UTM`
+**Purpose:**  
+Fixed AOI for Landsat analysis from 1990–2026.
 
-**Purpose:**
-- Define the project study area
-- Filter satellite imagery spatially
-- Clip analysis results
-- Calculate study area statistics
+**Earth Engine Asset ID:**
+
+`projects/harissalam-sangatta-mining/assets/sangatta_mining_area`
+
+> Replace the asset ID above with the actual Earth Engine asset path.
+
+## Important Note
+
+The mining Area of Interest represents a manually interpreted
+contemporary mining footprint.
+
+It does not represent an official ESDM mining concession or cadastral
+boundary.
