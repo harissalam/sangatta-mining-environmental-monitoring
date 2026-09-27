@@ -1,32 +1,34 @@
 // ============================================================
 // Project: Sangatta Mining Environmental Monitoring
 // Script : 01_aoi_exploration.js
-// Purpose: Define and inspect the Area of Interest (AOI)
+// Purpose: Define and inspect the Area of Interest (miningArea)
+// Important Note : The mining Area of Interest represents a manually interpreted contemporary mining footprint.
+// It does not represent an official ESDM mining concession or cadastral boundary.
 // ============================================================
 
 
 // ------------------------------------------------------------
-// 1. AOI
+// 1. miningArea
 // ------------------------------------------------------------
 
-var aoiGeometry = aoi.geometry();
+var miningAreaGeometry = miningArea.geometry();
 
-Map.centerObject(aoi, 9);
+Map.centerObject(miningArea, 9);
 
 Map.addLayer(
-  aoi,
+  miningArea,
   {color: 'red'},
   'Study Area'
 );
 
 
 // ------------------------------------------------------------
-// 2. AOI Information
+// 2. miningArea Information
 // ------------------------------------------------------------
 
-var areaHa = aoiGeometry
+var areaHa = miningAreaGeometry
   .area()
   .divide(1e4);
 
-print('AOI FeatureCollection:', aoi);
-print('AOI area (Hectares):', areaHa);
+print('miningArea FeatureCollection:', miningArea);
+print('miningArea area (Hectares):', areaHa);

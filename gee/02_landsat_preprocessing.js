@@ -15,15 +15,15 @@
 
 
 // ------------------------------------------------------------
-// 1. AOI
+// 1. miningArea
 // ------------------------------------------------------------
 
-var aoiGeometry = aoi.geometry();
+var miningAreaGeometry = miningArea.geometry();
 
-Map.centerObject(aoi, 9);
+Map.centerObject(miningArea, 9);
 
 Map.addLayer(
-  aoi,
+  miningArea,
   {color: 'red'},
   'Study Area'
 );
@@ -174,28 +174,28 @@ function preprocessL89(image) {
 var landsat5 = ee.ImageCollection(
   'LANDSAT/LT05/C02/T1_L2'
 )
-.filterBounds(aoi)
+.filterBounds(miningArea)
 .map(preprocessL57);
 
 
 var landsat7 = ee.ImageCollection(
   'LANDSAT/LE07/C02/T1_L2'
 )
-.filterBounds(aoi)
+.filterBounds(miningArea)
 .map(preprocessL57);
 
 
 var landsat8 = ee.ImageCollection(
   'LANDSAT/LC08/C02/T1_L2'
 )
-.filterBounds(aoi)
+.filterBounds(miningArea)
 .map(preprocessL89);
 
 
 var landsat9 = ee.ImageCollection(
   'LANDSAT/LC09/C02/T1_L2'
 )
-.filterBounds(aoi)
+.filterBounds(miningArea)
 .map(preprocessL89);
 
 // ------------------------------------------------------------
@@ -312,23 +312,23 @@ print(
 
 var composite1990 = phase1
   .median()
-  .clip(aoiGeometry);
+  .clip(miningAreaGeometry);
 
 var composite2000 = phase2
   .median()
-  .clip(aoiGeometry);
+  .clip(miningAreaGeometry);
 
 var composite2010 = phase3
   .median()
-  .clip(aoiGeometry);
+  .clip(miningAreaGeometry);
 
 var composite2020 = phase4
   .median()
-  .clip(aoiGeometry);
+  .clip(miningAreaGeometry);
 
 var composite2026 = phase5
   .median()
-  .clip(aoiGeometry);
+  .clip(miningAreaGeometry);
   
 // ------------------------------------------------------------
 // 8. VISUALIZATION OF ALL BAND COMPOSITE

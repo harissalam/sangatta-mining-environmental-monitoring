@@ -22,15 +22,15 @@
 
 
 // ------------------------------------------------------------
-// 1. AOI
+// 1. miningArea
 // ------------------------------------------------------------
 
-var aoiGeometry = aoi.geometry();
+var miningAreaGeometry = miningArea.geometry();
 
-Map.centerObject(aoi, 9);
+Map.centerObject(miningArea, 9);
 
 Map.addLayer(
-  aoi,
+  miningArea,
   {color: 'red'},
   'Study Area'
 );
@@ -181,28 +181,28 @@ function preprocessL89(image) {
 var landsat5 = ee.ImageCollection(
   'LANDSAT/LT05/C02/T1_L2'
 )
-.filterBounds(aoi)
+.filterBounds(miningArea)
 .map(preprocessL57);
 
 
 var landsat7 = ee.ImageCollection(
   'LANDSAT/LE07/C02/T1_L2'
 )
-.filterBounds(aoi)
+.filterBounds(miningArea)
 .map(preprocessL57);
 
 
 var landsat8 = ee.ImageCollection(
   'LANDSAT/LC08/C02/T1_L2'
 )
-.filterBounds(aoi)
+.filterBounds(miningArea)
 .map(preprocessL89);
 
 
 var landsat9 = ee.ImageCollection(
   'LANDSAT/LC09/C02/T1_L2'
 )
-.filterBounds(aoi)
+.filterBounds(miningArea)
 .map(preprocessL89);
 
 // ------------------------------------------------------------
@@ -319,23 +319,23 @@ print(
 
 var composite1990 = phase1
   .median()
-  .clip(aoiGeometry);
+  .clip(miningAreaGeometry);
 
 var composite2000 = phase2
   .median()
-  .clip(aoiGeometry);
+  .clip(miningAreaGeometry);
 
 var composite2010 = phase3
   .median()
-  .clip(aoiGeometry);
+  .clip(miningAreaGeometry);
 
 var composite2020 = phase4
   .median()
-  .clip(aoiGeometry);
+  .clip(miningAreaGeometry);
 
 var composite2026 = phase5
   .median()
-  .clip(aoiGeometry);
+  .clip(miningAreaGeometry);
   
 // ------------------------------------------------------------
 // 8. VISUALIZATION
@@ -611,7 +611,7 @@ Map.addLayer(
 );
 
 // ------------------------------------------------------------
-// 14. AOI SUMMARY STATISTICS
+// 14. miningArea SUMMARY STATISTICS
 // ------------------------------------------------------------
 
 function calculateMeanIndices(image, period) {
@@ -626,7 +626,7 @@ function calculateMeanIndices(image, period) {
     ])
     .reduceRegion({
       reducer: ee.Reducer.mean(),
-      geometry: aoiGeometry,
+      geometry: miningAreaGeometry,
       scale: 30,
       maxPixels: 1e9
     });
@@ -800,3 +800,347 @@ createColorBar(
 
 // Add legend to map
 Map.add(legendPanel);
+
+// ------------------------------------------------------------
+// SPECTRAL INDEX HELPER
+// ------------------------------------------------------------
+
+function normalizedIndex(image, bandA, bandB, outputName) {
+
+  return image.expression(
+    '(A - B) / (A + B)',
+    {
+      A: image.select(bandA),
+      B: image.select(bandB)
+    }
+  ).rename(outputName);
+}
+
+
+// ------------------------------------------------------------
+// ADD SPECTRAL INDICES
+// ------------------------------------------------------------
+
+function addSpectralIndices(image) {
+
+  var ndvi = normalizedIndex(
+    image,
+    'nir',
+    'red',
+    'NDVI'
+  );
+
+  var ndwi = normalizedIndex(
+    image,
+    'green',
+    'nir',
+    'NDWI'
+  );
+
+  var mndwi = normalizedIndex(
+    image,
+    'green',
+    'swir1',
+    'MNDWI'
+  );
+
+  var nbr = normalizedIndex(
+    image,
+    'nir',
+    'swir2',
+    'NBR'
+  );
+
+  var bsi = image.expression(
+    '((SWIR1 + RED) - (NIR + BLUE)) / ' +
+    '((SWIR1 + RED) + (NIR + BLUE))',
+    {
+      SWIR1: image.select('swir1'),
+      RED: image.select('red'),
+      NIR: image.select('nir'),
+      BLUE: image.select('blue')
+    }
+  ).rename('BSI');
+
+  return image.addBands([
+    ndvi,
+    ndwi,
+    mndwi,
+    bsi,
+    nbr
+  ]);
+}
+
+// ------------------------------------------------------------
+// 16. MERGE LANDSAT COLLECTIONS
+// ------------------------------------------------------------
+
+var allLandsat = landsat5
+  .merge(landsat7)
+  .merge(landsat8)
+  .merge(landsat9)
+  .filterDate(
+    '1990-01-01',
+    '2027-01-01'
+  )
+  .sort('system:time_start');
+
+// print(
+//   'Merged Landsat Collection:',
+//   allLandsat
+// );
+
+// ------------------------------------------------------------
+// 17. ANNUAL YEAR SEQUENCE
+// ------------------------------------------------------------
+
+var years = ee.List.sequence(
+  1990,
+  2026
+);
+
+// print(
+//   'Analysis Years:',
+//   years
+// );
+
+// ------------------------------------------------------------
+// 18. CHECK ANNUAL IMAGE AVAILABILITY
+// ------------------------------------------------------------
+
+var annualImageCounts = ee.FeatureCollection(
+
+  years.map(function(year) {
+
+    year = ee.Number(year);
+
+    var startDate = ee.Date.fromYMD(
+      year,
+      1,
+      1
+    );
+
+    var endDate = startDate.advance(
+      1,
+      'year'
+    );
+
+    var yearlyCollection = allLandsat
+      .filterDate(
+        startDate,
+        endDate
+      );
+
+    return ee.Feature(
+      null,
+      {
+        year: year,
+        image_count: yearlyCollection.size()
+      }
+    );
+
+  })
+
+);
+
+// print(
+//   'Annual Image Availability:',
+//   annualImageCounts
+// );
+
+//CHECK AVAILABILITY OF IMAGE BY QC CHART
+
+var imageCountChart =
+  ui.Chart.feature.byFeature(
+    annualImageCounts,
+    'year',
+    ['image_count']
+  )
+  .setChartType('ColumnChart')
+  .setOptions({
+
+    title:
+      'Available Landsat Images per Year',
+
+    hAxis: {
+      title: 'Year'
+    },
+
+    vAxis: {
+      title: 'Number of Images'
+    },
+
+    legend: {
+      position: 'none'
+    }
+
+  });
+
+// print(imageCountChart); // IF NONE IS ZERO, PROCEEDD
+
+// ------------------------------------------------------------
+// 19. ANNUAL SPECTRAL INDEX STATISTICS
+// ------------------------------------------------------------
+
+var annualStatistics = ee.FeatureCollection(
+
+  years.map(function(year) {
+
+    year = ee.Number(year);
+
+
+    // ----------------------------------------
+    // Define annual date range
+    // ----------------------------------------
+
+    var startDate = ee.Date.fromYMD(
+      year,
+      1,
+      1
+    );
+
+    var endDate = startDate.advance(
+      1,
+      'year'
+    );
+
+
+    // ----------------------------------------
+    // Filter Landsat images for that year
+    // ----------------------------------------
+
+    var yearlyCollection = allLandsat
+      .filterDate(
+        startDate,
+        endDate
+      );
+
+
+    // ----------------------------------------
+    // Annual median composite
+    // ----------------------------------------
+
+    var annualComposite = yearlyCollection
+      .median()
+      .clip(miningAreaGeometry);
+
+
+    // ----------------------------------------
+    // Calculate spectral indices
+    // ----------------------------------------
+
+    var annualIndices =
+      addSpectralIndices(
+        annualComposite
+      );
+
+
+    var statistics = annualIndices
+      .select([
+        'NDVI',
+        'NDWI',
+        'MNDWI',
+        'BSI',
+        'NBR'
+      ])
+      .reduceRegion({
+
+        reducer:
+          ee.Reducer.mean(),
+
+        geometry:
+          miningAreaGeometry,
+
+        scale:
+          30,
+
+        maxPixels:
+          1e9,
+
+        tileScale:
+          8
+
+      });
+
+    // ----------------------------------------
+    // Create annual table row
+    // ----------------------------------------
+
+    return ee.Feature(
+      null,
+      statistics
+    )
+    .set(
+      'year',
+      year
+    )
+    .set(
+    'image_count',
+    yearlyCollection.size()
+    );
+  })
+
+).sort('year');
+
+
+// //Export annual statistics to gee assets
+// var exportStatistics = annualStatistics.map(function(feature) {
+//   return feature.setGeometry(miningAreaGeometry.centroid(30));
+// });
+
+// Export.table.toAsset({
+//   collection: exportStatistics,
+//   description: 'Export_Annual_Spectral_Statistics_v2',
+//   assetId: 'projects/harissalam-geospatial-lab/assets/annual_spectral_statistics'
+// });
+
+// print(
+//   'Annual Spectral Index Statistics:',
+//   annualStatistics
+// ); // INSPECT THE RESULT (SUMMARY)
+
+// ------------------------------------------------------------
+// 20. NDVI TIME SERIES
+// ------------------------------------------------------------
+
+// Load the already-calculated annual statistics.
+
+var savedStatistics = ee.FeatureCollection(
+  'projects/harissalam-geospatial-lab/assets/annual_spectral_statistics'
+).sort('year');
+
+var ndviTimeSeries =
+  ui.Chart.feature.byFeature(
+    savedStatistics,
+    'year',
+    ['NDVI']
+  )
+  .setChartType('LineChart')
+  .setOptions({
+
+    title:
+      'Annual Mean NDVI — 1990 to 2026',
+
+    hAxis: {
+      title: 'Year'
+    },
+
+    vAxis: {
+      title: 'Mean NDVI',
+      viewWindow: {
+        min: 0,
+        max: 1
+      }
+    },
+
+    lineWidth: 2,
+
+    pointSize: 4,
+
+    legend: {
+      position: 'none'
+    }
+
+  });
+
+print(ndviTimeSeries);

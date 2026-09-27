@@ -21,9 +21,7 @@ Fixed AOI for Landsat analysis from 1990–2026.
 
 **Earth Engine Asset ID:**
 
-`projects/harissalam-sangatta-mining/assets/sangatta_mining_area`
-
-> Replace the asset ID above with the actual Earth Engine asset path.
+`projects/harissalam-geospatial-lab/assets/sangatta_mining_area`
 
 ## Important Note
 
